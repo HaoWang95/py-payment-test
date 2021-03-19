@@ -14,6 +14,8 @@ from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
+from src.task import UpdatePaymentTask
+from random import uniform
 import uvicorn
 
 
@@ -138,21 +140,22 @@ async def create_user(user: UserIn):
         return JSONResponse(status_code=201, content={"result": 'success'})
 
 
-@app.put('/user/{userid}')
+#@app.put('/user/{userid}')
 async def edit_user(userid, user: UserIn):
     pass
 
 
 @app.get('/user/{userid}/accounts/')
-async def get_user_account(userid):
+async def get_user_account(userid:int):
     '''
     List user's account info
     '''
-    if not isinstance(userid, int):
-        raise HTTPException(status_code= 400, detail='bad request')
-    query = PaymentAccount.select().where(PaymentAccount.c.user == userid)
-    query_result = await db_instance.fetch_all(query)
-    return {'status':'success', 'result': query_result}
+    try:
+        query = PaymentAccount.select().where(PaymentAccount.c.user == int(userid))
+        query_result = await db_instance.fetch_all(query)
+        return {'status':'success', 'result': query_result}
+    except err as e:
+        print(e)
 
 
 @app.post('/user/{userid}/account')
@@ -167,14 +170,13 @@ async def create_user_account(userid: int,account_info: AccountIn):
     if check_query is not None:
         raise HTTPException(status_code=409, detail= 'account already exists')
     else:
-        create_query = PaymentAccount.insert().values(user = userid, account_number = account_info.account_number)
+        deposit = uniform(500.0, 10000.0)
+        create_query = PaymentAccount.insert().values(user = userid, account_number = account_info.account_number, deposit = deposit)
         new_account = await db_instance.execute(create_query)
         return {
             'status':'success',
             'result':new_account
         }
-
-
 
 #@app.put('/user/{userid}/account/{account_id}')
 async def edit_user_account(userid):
@@ -192,7 +194,7 @@ async def delete_user_account(userid, account_id):
     if not userid or not account_id or userid < 1 or account_id:
         raise HTTPException(status_code=400, detail='bad request')
     else:
-        delete_query = PaymentAccount.delete().where(PaymentAccount.c.user == userid and PaymentAccount.c.id == account_id)
+        delete_query = PaymentAccount.delete().where(PaymentAccount.c.user == userid)
         delete_result = await db_instance.execute(delete_query)
         return {
             'status':'success',
@@ -204,7 +206,7 @@ async def delete_user_account(userid, account_id):
 @app.get('/user/{userid}/payrecord')
 async def get_user_record(userid: int):
     '''
-    Find user's payment list (payout)
+    Find user's payment list (payout), for testing, use 1,
     '''
     if userid < 1 or type(userid) != int:
         raise HTTPException(status_code= 400, detail= 'bad request')
@@ -218,6 +220,8 @@ async def get_user_record(userid: int):
 
     
 payment_memory = []
+
+payment_task = UpdatePaymentTask()
 
 @app.post('/user/pay/')
 async def make_payment(payment: Payment):
@@ -272,13 +276,16 @@ async def make_payment(payment: Payment):
         create_time = current
     )
     new_record = await db_instance.execute(create_query)
-    print(new_record)
-    payment_memory.append(new_record)
+    # reduce the corresponding amount of money
+    await db_instance.execute(
+        PaymentAccount.update().where(PaymentAccount.c.id == sender_account).values()
+    )
+    payment_task.update(new_record, current)
+
     return {
         'status': 'success',
         'result': new_record
     }
-
 
 
 def send_email(email: str, message = 'payment processed.'):
@@ -304,7 +311,7 @@ def send_email(email: str, message = 'payment processed.'):
         print('success')
         return {'status': 'success'}
     except smtplib.SMTPException as e:
-        print('error',e) #打印错误
+        print('error',e)
         return {'status': e}
 
 

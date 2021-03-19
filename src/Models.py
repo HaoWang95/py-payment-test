@@ -17,6 +17,7 @@ PaymentAccount = sqlalchemy.Table(
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key = True),
     sqlalchemy.Column("user", sqlalchemy.ForeignKey("users.id")),
     sqlalchemy.Column("account_number", sqlalchemy.String),
+    sqlalchemy.Column("deposit", sqlalchemy.Float)
 )
 
 
