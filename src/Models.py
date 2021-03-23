@@ -17,7 +17,8 @@ PaymentAccount = sqlalchemy.Table(
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key = True),
     sqlalchemy.Column("user", sqlalchemy.ForeignKey("users.id")),
     sqlalchemy.Column("account_number", sqlalchemy.String),
-    sqlalchemy.Column("deposit", sqlalchemy.Float)
+    sqlalchemy.Column("deposit", sqlalchemy.Float),
+    sqlalchemy.Column("account_status", sqlalchemy.Boolean)
 )
 
 
@@ -31,7 +32,7 @@ PaymentRecord = sqlalchemy.Table(
     sqlalchemy.Column("receiver_account", sqlalchemy.ForeignKey("payment_accounts.id")),
     sqlalchemy.Column("amount", sqlalchemy.Float),
     sqlalchemy.Column("transactionFee", sqlalchemy.Float),
-    sqlalchemy.Column("status", sqlalchemy.String),
+    sqlalchemy.Column("is_deleted", sqlalchemy.String),
     sqlalchemy.Column("create_time", sqlalchemy.Date),
 )
 
@@ -52,6 +53,8 @@ class AccountModel(Base):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, index=True)
     userid = sqlalchemy.Column(sqlalchemy.ForeignKey("users.id"))
     account = sqlalchemy.Column(sqlalchemy.String)
+    deposit = sqlalchemy.Column(sqlalchemy.Integer)
+    account_status = sqlalchemy.Column(sqlalchemy.Boolean)
 
 
 class PaymentRecordModel(Base):

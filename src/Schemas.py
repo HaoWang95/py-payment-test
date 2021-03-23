@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import date
+from typing import Optional
 
 
 class UserIn(BaseModel):
@@ -10,7 +11,16 @@ class UserIn(BaseModel):
     last: str
     email: str
     password: str
-    
+
+    class Config:
+        orm_mode = True
+
+
+class UserUpdate(BaseModel):
+    first: Optional[str] = None
+    last: Optional[str] = None
+    email: Optional[str] = None
+
     class Config:
         orm_mode = True
 
@@ -24,7 +34,7 @@ class UserLogin(BaseModel):
 
     class Config:
         orm_mode = True
-    
+
 
 class User(BaseModel):
     '''
@@ -41,6 +51,13 @@ class User(BaseModel):
 
 class AccountIn(BaseModel):
     account_number: int
+
+    class Config:
+        orm_mode = True
+
+
+class AccountUpdate(BaseModel):
+    deposit: int
 
     class Config:
         orm_mode = True
